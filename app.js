@@ -1,5 +1,16 @@
 import { Circle } from './modules/circle.js';
 import { Point } from './modules/point.js';
+import { ColorList, ColorNode } from './modules/colorList.js';
+
+// temp colorList for now
+const colorNode1 = new ColorNode('#5C4886');
+const colorNode2 = new ColorNode('#CF2022');
+const colorNode3 = new ColorNode('#0F4A7D');
+const colorNode4 = new ColorNode('#9A2D4E');
+const colorNode5 = new ColorNode('#E53E3F');
+colorNode1.next = [colorNode2, colorNode3];
+colorNode2.next = [colorNode4, colorNode5];
+const colorList = new ColorList(colorNode1);
 
 class App {
 	constructor() {
@@ -7,22 +18,28 @@ class App {
 		this.ctx = this.canvas.getContext('2d');
 		document.body.appendChild(this.canvas);
 
+		this.pixelRatio = window.devicePixelRatio > 1 ? 2 : 1;
+
+		window.addEventListener('resize', this.resize.bind(this), false);
+		this.resize();
+
 		this.totalCircle = 1;
 		this.radius = 150;
 		this.circles = [];
 		for (let i = 0; i < this.totalCircle; i++) {
-			const circle = new Circle(this.radius);
+			const circle = new Circle(
+				this.radius,
+				this.stageWidth / 2,
+				this.stageHeight / 2,
+				7,
+				colorList.base
+			);
 			this.circles.push(circle);
 		}
 
 		this.startPos = new Point();
 		this.endPos = new Point();
 		this.isDragging = false;
-
-		this.pixelRatio = window.devicePixelRatio > 1 ? 2 : 1;
-
-		window.addEventListener('resize', this.resize.bind(this), false);
-		this.resize();
 
 		requestAnimationFrame(this.animate.bind(this));
 
@@ -39,10 +56,7 @@ class App {
 		this.canvas.height = this.stageHeight * this.pixelRatio;
 		this.ctx.scale(this.pixelRatio, this.pixelRatio);
 
-		for (let i = 0; i < this.circles.length; i++) {
-			const circle = this.circles[i];
-			circle.resize(this.stageWidth, this.stageHeight);
-		}
+		this.ctx.globalCompositeOperation = 'hard-light';
 	}
 
 	animate(t) {
@@ -52,12 +66,13 @@ class App {
 
 		for (let i = 0; i < this.circles.length; i++) {
 			const circle = this.circles[i];
-			circle.animate(this.ctx);
+			circle.animate(this.ctx, this.stageWidth, this.stageHeight);
 		}
 
 		if (this.isDragging) {
-			this.ctx.fillStyle = `#ff89d8`;
-			this.ctx.strokeStyle = `#ff89d8`;
+			this.ctx.fillStyle = `#78BFBF`;
+			this.ctx.strokeStyle = `#78BFBF`;
+			this.ctx.lineWidth = 5;
 
 			this.ctx.beginPath();
 			this.ctx.arc(this.endPos.x, this.endPos.y, 8, 0, Math.PI * 2);
@@ -88,24 +103,34 @@ class App {
 		for (let i = 0; i < this.circles.length; i++) {
 			const circle = this.circles[i];
 			if (centerPos.collide(circle)) {
-				// if you drag through the circle
-				// let it split and change color
-				const index = this.circles.indexOf(circle);
-				this.circles.splice(index, 1);
+				// if the curr color can be divided into other colors
+				// then let the circle be splited
+				const newColors = circle.colorNode.next;
+				if (newColors != null) {
+					// remove the curr (bigger) circle
+					const index = this.circles.indexOf(circle);
+					this.circles.splice(index, 1);
 
-				// now add split circles with a half radius
-				const newRadius = circle.radius / 2;
-				const first = new Circle(
-					newRadius,
-					circle.x - newRadius,
-					circle.y
-				);
-				const second = new Circle(
-					newRadius,
-					circle.x + newRadius,
-					circle.y
-				);
-				this.circles.push(first, second);
+					// now add split circles with a half radius and new color
+					const newRadius = circle.radius / 2;
+					const first = new Circle(
+						newRadius,
+						circle.x - newRadius,
+						circle.y,
+						circle.speed * 0.75,
+						newColors[0]
+					);
+					const second = new Circle(
+						newRadius,
+						circle.x + newRadius,
+						circle.y,
+						circle.speed * 0.75,
+						newColors[1],
+						true
+					);
+					this.circles.push(first, second);
+				}
+
 				break;
 			}
 		}
