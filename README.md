@@ -5,6 +5,11 @@ Try to slice the circle and it will be sliced into two circles with the colors t
 
 _Note: color formula indicated with the current version of the may not be correct and only used for testing purpose_
 
+## Screenshots
+
+![Demo 1](public/demo-1.jpg)
+![Demo 2](public/demo-2.jpg)
+
 ## Future Improvements
 
 -   Smarter way to detect if you drag through a particular circle
